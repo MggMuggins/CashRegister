@@ -1,0 +1,9 @@
+{
+	"name": "cashregister",
+	"authors": [
+		"Wesley"
+	],
+	"description": "Cash register ported from C++ because D is Awesome",
+	"copyright": "Copyright © 2017, Wesley",
+	"license": "None"
+}
