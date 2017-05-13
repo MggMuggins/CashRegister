@@ -16,7 +16,9 @@
 
 import std.stdio;
 import std.string;
-import std.conv;
+
+//For colors...
+import consoled;
 
 immutable float TAX = 0.08;
 
@@ -30,10 +32,16 @@ void shell()
 {
     char[] command;
     auto register = new CashRegister();
-    writeln("Welcome to RegisterShell! Type \"help\" for a list of available commands.");
+    writecln(Fg.lightBlue, "Welcome to RegisterShell! Type \"help\" for a list of available commands.");
     while(command != "quit")
     {
-        write(">$ ");
+        //Write Prompt with colors
+        fontStyle = FontStyle.bold;
+        foreground = Color.green;
+        writec(">$ ");
+        fontStyle = FontStyle.none;
+        resetColors();
+        
         readln(command);
         command = strip(command);
         register.parseCommand(command);
@@ -44,13 +52,23 @@ class CashRegister
 {
     private Item[] purchases;
     private Item[] returns;
-    private double total = 0;
+    
+    private double dues = 0;
     private double moneyRegister = 100;
+    
+    //For purchases
+    double ptotal = 0;
+    double ptax = 0;
+    
+    double rtotal = 0;
+    double rtax = 0;
+    
     
     void parseCommand(char[] com)
     {
         char[] name;
         double cost;
+        
         if (com == "quit")
         {
             return;
@@ -64,35 +82,62 @@ class CashRegister
         {
             write("Item name > ");
             readln(name);
+            name = strip(name);
             write("Item cost > ");
             readf(" %s", &cost);
+            //Hackey so we don't get two prompts because of readf
+            readln();
             this.addPurchase(name, cost);
             return;
         }
-        else if (com == "displayPurchase")
+        else if (com == "purchase")
         {
-            this.printPurchases();
+            this.printBill(this.purchases, &ptotal, &ptax);
+            this.purchase();
+            if(this.moneyRegister > 0)
+                this.purchases = [];
+            else
+                writecln(Fg.red, "Add more money to the register and try again");
+                resetColors();
             return;
         }
         else if (com == "addReturn")
         {
             write("Item name > ");
             readln(name);
+            name = strip(name);
             write("Item cost > ");
             readf(" %s", &cost);
+            readln();
             this.addReturn(name, cost);
             return;
         }
-        else if (com == "displayReturns")
+        else if (com == "return")
         {
+            this.printBill(this.returns, &rtotal, &rtax);
+            this.eturnra();
+            if(this.moneyRegister > 0)
+                this.returns = [];
+            else
+                writecln(Fg.red, "Add more money to the register and try again");
+                resetColors();
             return;
         }
         else if (com == "closeOut")
         {
+            this.closeOut();
             return;
+        }
+        else if(com == "addMoney")
+        {
+            write("Amount > ");
+            readf(" %s", &cost);
+            readln();
+            this.addRegisterMoney(cost);
         }
         else if (com == "")
         {
+            //You can just press enter to get a new prompt
         }
         else
         {
@@ -110,12 +155,14 @@ class CashRegister
         writeln("\tPrint this help");
         writeln("addItem [item name] [item cost]");
         writeln("\tAdd an item to the register");
-        writeln("displayPurchase");
-        writeln("\tDisplay the total purchase and clear the register");
+        writeln("purchase");
+        writeln("\tDeal with total purchase and clear the register");
         writeln("addReturn [item name] [item cost]");
         writeln("\tAdd an item to the returns register");
-        writeln("displayReturns");
-        writeln("\tDisplay the total returns and clear the returns register");
+        writeln("return");
+        writeln("\tDeal with total returns and clear the returns register");
+        writeln("addMoney");
+        writeln("\tAdd a specified amount to the register");
         writeln("closeOut");
         writeln("\tDisplay register stats and completely wipe the register");
     }
@@ -125,25 +172,74 @@ class CashRegister
         this.purchases ~= new Item(name, cost);
     }
     
-    void printPurchases()
-    {
-        foreach(item; this.purchases)
-        {
-            writeln("\t", item.name, ": $", item.cost);
-        }
-    }
-    
     void addReturn(char[] name, double cost)
     {
         this.returns ~= new Item(name, cost);
     }
     
-    void printReturns()
+    //Passing in two pointers here, no elegant but it works
+    void printBill(Item[] objects, double *total, double *tax)
     {
-        foreach(item; this.returns)
+        writeln("Receipt:");
+        foreach(item; objects)
         {
             writeln("\t", item.name, ": $", item.cost);
+            *total += item.cost;
+            *tax += item.tax;
         }
+    }
+    
+    void purchase()
+    {
+        writeln("Subtotal = ", this.ptotal);
+        writeln("Tax = ", this.ptax);
+        writeln("Total = ", this.ptotal + this.ptax);
+        this.dues = this.ptotal + this.ptax;
+        this.levelDues();
+    }
+    
+    void levelDues()
+    {
+        double paid = 0;
+        double changeDue = 0;
+        write("Cash Paid > ");
+        readf(" %s", &paid);
+        readln();
+        this.moneyRegister += paid;
+        changeDue = paid - this.dues;
+        
+        writeln("Change Due: $", changeDue);
+        if(this.moneyRegister > 0)
+            this.moneyRegister -= changeDue;
+        
+        this.ptotal = 0;
+        this.ptax = 0;
+    }
+    
+    //Return in pig latin, get it?
+    void eturnra()
+    {
+        writeln("Item Total = ", this.rtotal);
+        writeln("Tax = ", this.rtax);
+        writeln("Total Refund = ", this.rtotal + this.rtax);
+        if(this.moneyRegister > 0)
+            this.moneyRegister -= this.rtotal + this.rtax;
+        
+        this.rtotal = 0;
+        this.rtax = 0;
+    }
+    
+    void addRegisterMoney(double amount)
+    {
+        this.moneyRegister += amount;
+    }
+    
+    void closeOut()
+    {
+        writeln("Starting Money = 100");
+        writeln("Ending Money = ", this.moneyRegister);
+        this.moneyRegister = 100;
+        writeln("Register Reset");
     }
 }
 
