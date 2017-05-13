@@ -6,5 +6,5 @@ The code quality on this thing is trash, but it does work, more or less. Let me 
 # Building
 Install dub and a D2 compiler (dmd or gdc), then clone this repo and run ```dub``` in the project to build, fetch dependencies and run.
 
-#Dependencies
+# Dependencies
 We depend on [ConsoleD](https://github.com/robik/ConsoleD) for colors.
